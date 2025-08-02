@@ -2,14 +2,11 @@ use std::fs;
 use std::path::Path;
 
 pub fn get_file_size<P: AsRef<Path>>(path: P) -> std::io::Result<u64> {
-    match fs::metadata(path) {
-        Ok(metadata) => Ok(metadata.len()),
-        Err(e) => Err(e),
-    }
+    fs::metadata(path).map(|m| m.len())
 }
 
 pub fn format_bytes(bytes: u64) -> String {
-    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
+    const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB", "PB", "EB"];
     let mut size = bytes as f64;
     let mut unit_index = 0;
 
@@ -20,8 +17,12 @@ pub fn format_bytes(bytes: u64) -> String {
 
     if unit_index == 0 {
         format!("{} {}", size as u64, UNITS[unit_index])
-    } else {
+    } else if size < 10.0 {
         format!("{:.2} {}", size, UNITS[unit_index])
+    } else if size < 100.0 {
+        format!("{:.1} {}", size, UNITS[unit_index])
+    } else {
+        format!("{:.0} {}", size, UNITS[unit_index])
     }
 }
 

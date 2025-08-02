@@ -28,13 +28,15 @@ impl SpeedLimitExtension {
         let mut last_check = self.last_check.lock().await;
         let elapsed = now.duration_since(*last_check).as_secs_f64();
         
-        if elapsed >= 1.0 {
+        if elapsed >= 0.2 {
             let downloaded = self.downloaded.swap(0, Ordering::Relaxed);
             let current_speed = (downloaded as f64 / elapsed) as u64;
             
             if current_speed > self.max_speed {
-                let sleep_time = ((current_speed - self.max_speed) as f64 / self.max_speed as f64) * 1000.0;
-                tokio::time::sleep(Duration::from_millis(sleep_time as u64)).await;
+                let sleep_time = ((current_speed - self.max_speed) as f64 / self.max_speed as f64) * (elapsed * 1000.0);
+                if sleep_time > 1.0 {
+                    tokio::time::sleep(Duration::from_millis(sleep_time as u64)).await;
+                }
             }
             
             *last_check = now;

@@ -23,15 +23,22 @@ impl ChecksumExtension {
                 let mut file = File::open(file_path)?;
                 let mut hasher = Sha256::new();
                 let mut buffer = [0; 8192];
-                
-                loop {
-                    let bytes_read = file.read(&mut buffer)?;
+                let total = crate::utils::get_file_size(file_path)?;
+                let mut read = 0u64;
+                while let Ok(bytes_read) = file.read(&mut buffer) {
                     if bytes_read == 0 {
                         break;
                     }
                     hasher.update(&buffer[..bytes_read]);
+                    read += bytes_read as u64;
+                    if total > 0 && read % (1024 * 1024) == 0 {
+                        print!("\rChecksum progress: {:.1}%", (read as f64 / total as f64) * 100.0);
+                        std::io::stdout().flush().ok();
+                    }
                 }
-                
+                if total > 0 {
+                    println!("\rChecksum progress: 100.0%");
+                }
                 let result = hasher.finalize();
                 Ok(format!("{:x}", result))
             }
