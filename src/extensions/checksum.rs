@@ -4,7 +4,7 @@ use crate::utils::get_file_size;
 use async_trait::async_trait;
 use sha2::{Digest, Sha256};
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Write};
 
 pub struct ChecksumExtension {
     algorithm: String,
@@ -17,7 +17,7 @@ impl ChecksumExtension {
         }
     }
 
-    fn calculate_checksum(&self, file_path: &std::path::Path) -> Result<String, Box<dyn std::error::Error>> {
+    fn calculate_checksum(&self, file_path: &std::path::Path) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
         match self.algorithm.as_str() {
             "sha256" => {
                 let mut file = File::open(file_path)?;
@@ -33,7 +33,7 @@ impl ChecksumExtension {
                     read += bytes_read as u64;
                     if total > 0 && read % (1024 * 1024) == 0 {
                         print!("\rChecksum progress: {:.1}%", (read as f64 / total as f64) * 100.0);
-                        std::io::stdout().flush().ok();
+                        std::io::stdout().flush()?;
                     }
                 }
                 if total > 0 {
@@ -49,12 +49,12 @@ impl ChecksumExtension {
 
 #[async_trait]
 impl Extension for ChecksumExtension {
-    async fn on_pre_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    async fn on_pre_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         println!("Checksum verification extension activated ({})", self.algorithm);
         Ok(())
     }
 
-    async fn on_post_download(&self, config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    async fn on_post_download(&self, config: &Config) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         println!("Calculating checksum...");
         
         let file_size = get_file_size(&config.output_path)?;

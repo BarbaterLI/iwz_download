@@ -5,7 +5,7 @@ use crate::utils::format_bytes;
 use async_trait::async_trait;
 use reqwest::header::{HeaderMap, RANGE};
 use std::fs::{self};
-use std::io::{SeekFrom};
+use std::io::{SeekFrom, Write};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{mpsc, Mutex};
@@ -69,7 +69,7 @@ impl Downloader {
         self.progress_reporter = Some(reporter);
     }
 
-    pub async fn download(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn download(&mut self) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         info!("Starting download from: {}", self.config.url);
         
         // Run pre-download extensions
@@ -224,7 +224,7 @@ impl Downloader {
         progress_tx: mpsc::UnboundedSender<TaskProgress>,
         buffer_size: usize,
         max_retries: usize,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         let mut retry_count = 0;
         let mut progress = TaskProgress::new(task.thread_id, 0, task.size());
 
@@ -250,7 +250,7 @@ impl Downloader {
         progress_tx: &mpsc::UnboundedSender<TaskProgress>,
         progress: &mut TaskProgress,
         buffer_size: usize,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
         debug!("Starting download task {}: {}-{}", task.thread_id, task.start_byte, task.end_byte);
 
         let mut headers = HeaderMap::new();

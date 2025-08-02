@@ -21,7 +21,7 @@ impl SpeedLimitExtension {
         }
     }
 
-    pub async fn limit_speed(&self, bytes: u64) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn limit_speed(&self, bytes: u64) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         self.downloaded.fetch_add(bytes, Ordering::Relaxed);
         
         let now = Instant::now();
@@ -48,12 +48,12 @@ impl SpeedLimitExtension {
 
 #[async_trait]
 impl Extension for SpeedLimitExtension {
-    async fn on_pre_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    async fn on_pre_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         println!("Speed limit extension activated: {} KB/s", self.max_speed / 1024);
         Ok(())
     }
 
-    async fn on_post_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error>> {
+    async fn on_post_download(&self, _config: &Config) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         println!("Speed limit extension completed");
         Ok(())
     }
